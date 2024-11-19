@@ -1,7 +1,7 @@
 import onnx
 from onnx import helper, TensorProto
 
-if __name__ == "__main__":
+def conv_integer():
     input_X = helper.make_tensor_value_info('input_X', TensorProto.INT8, [None, None])
     input_W = helper.make_tensor_value_info('input_W', TensorProto.INT8, [None, None])
     input_X_zero_point = helper.make_tensor_value_info('input_X_zero_point', TensorProto.INT8, [1])
@@ -22,4 +22,8 @@ if __name__ == "__main__":
     )
 
     model = helper.make_model(graph)
+    return model
+
+if __name__ == "__main__":
+    model = conv_integer()
     onnx.save(model, 'conv_integer.onnx')

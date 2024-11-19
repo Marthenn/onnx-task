@@ -1,7 +1,7 @@
 import onnx
 from onnx import helper, TensorProto
 
-if __name__ == "__main__":
+def matmul_integer():
     input_A = helper.make_tensor_value_info('input_A', TensorProto.INT8, [None, None])
     input_B = helper.make_tensor_value_info('input_B', TensorProto.INT8, [None, None])
     output_Y = helper.make_tensor_value_info('output_Y', TensorProto.INT32, [None, None])
@@ -20,4 +20,8 @@ if __name__ == "__main__":
     )
 
     model = helper.make_model(graph)
+    return model
+
+if __name__ == "__main__":
+    model = matmul_integer()
     onnx.save(model, 'matmul_integer.onnx')
