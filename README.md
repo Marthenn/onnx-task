@@ -1,7 +1,7 @@
 # onnx-task
 
 ## MatMulInteger
-![image](https://github.com/user-attachments/assets/22ac42b4-3021-42de-b8b2-7e1b0d5a05f0)
+![image](https://github.com/user-attachments/assets/ecc2922f-b12d-4fb1-9977-a7acb6e60f6f)
 
 ## ConvInteger
-![image](https://github.com/user-attachments/assets/14336055-98bb-4177-88bc-8a01a5f51943)
+![image](https://github.com/user-attachments/assets/b0e1c868-9865-460d-b864-11b7e106d1b2)
