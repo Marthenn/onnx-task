@@ -21,7 +21,7 @@ def conv_integer():
         [output_Y]
     )
 
-    model = helper.make_model(graph)
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
     return model
 
 if __name__ == "__main__":
