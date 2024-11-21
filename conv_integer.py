@@ -2,11 +2,11 @@ import onnx
 from onnx import helper, TensorProto
 
 def conv_integer():
-    input_X = helper.make_tensor_value_info('input_X', TensorProto.UINT8, [1, 1, 2, 2])
+    input_X = helper.make_tensor_value_info('input_X', TensorProto.UINT8, [1, 1, 3, 3])
     input_W = helper.make_tensor_value_info('input_W', TensorProto.UINT8, [1, 1, 2, 2])
     input_X_zero_point = helper.make_tensor_value_info('input_X_zero_point', TensorProto.UINT8, [1])
     input_W_zero_point = helper.make_tensor_value_info('input_W_zero_point', TensorProto.UINT8, [1])
-    output_Y = helper.make_tensor_value_info('output_Y', TensorProto.INT32, [1, 1, 1, 1])
+    output_Y = helper.make_tensor_value_info('output_Y', TensorProto.INT32, [1, 1, 2, 2])
 
     conv_node = helper.make_node(
         'ConvInteger',

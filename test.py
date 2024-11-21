@@ -19,7 +19,7 @@ class MyTestCase(unittest.TestCase):
         np.testing.assert_array_equal(np_res, output[0])
 
     def test_conv(self):
-        mat_X = np.random.randint(0, 225, (1, 1, 2, 2)).astype(np.uint8)
+        mat_X = np.random.randint(0, 225, (1, 1, 3, 3)).astype(np.uint8)
         mat_W = np.random.randint(0, 225, (1, 1, 2, 2)).astype(np.uint8)
         zero_X = np.random.randint(0, 225, (1)).astype(np.uint8)
         zero_W = np.random.randint(0, 225, (1)).astype(np.uint8)
@@ -41,10 +41,10 @@ class MyTestCase(unittest.TestCase):
 
         mat_X = mat_X - zero_X
         mat_W = mat_W - zero_W
-        np_res = np.zeros((1, 1, 1, 1), dtype=np.int32)
+        np_res = np.zeros((1, 1, 2, 2), dtype=np.int32)
         for i in range(2):
             for j in range(2):
-                np_res[0, 0, 0, 0] += mat_X[0, 0, i, j] * mat_W[0, 0, i, j]
+                np_res[0, 0, i, j] = np.sum(mat_X[0, 0, i:i+2, j:j+2] * mat_W[0, 0, :, :])
 
         np.testing.assert_array_equal(np_res, output[0])
 
