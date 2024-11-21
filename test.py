@@ -5,8 +5,8 @@ import onnxruntime as ort
 
 class MyTestCase(unittest.TestCase):
     def test_matmul(self):
-        mat_A = np.random.randint(-128, 127, (2, 2)).astype(np.int8)
-        mat_B = np.random.randint(-128, 127, (2, 2)).astype(np.int8)
+        mat_A = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
+        mat_B = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
 
         model_path = 'matmul_integer.onnx'
         sess = ort.InferenceSession(model_path)
