@@ -141,21 +141,6 @@ def perturb_quantizer(graph, node, module, model, input_dict, weight_dict, fault
 
     print(graph)
     """
-    if module == "Decoder":
-        replacement_dictionary = {
-            "onnx::ReduceMean_0_dynamic_axes_1": weight_dict["global_in"].shape[1],
-            "onnx::Unsqueeze_3_dynamic_axes_1": weight_dict["global_in_3"].shape[1],
-            "onnx::Unsqueeze_3_dynamic_axes_2": weight_dict["global_in_3"].shape[2],
-        }
-        for output in model.graph.output:
-            for dimension in range(len(output.type.tensor_type.shape.dim)):
-                for key in replacement_dictionary.keys():
-                    if key in str(output.type.tensor_type.shape.dim[dimension]):
-                        output.type.tensor_type.shape.dim[dimension].Clear()
-                        output.type.tensor_type.shape.dim[dimension].dim_value = replacement_dictionary[key]
-                    if "unk__" in str(output.type.tensor_type.shape.dim[dimension]):
-                        output.type.tensor_type.shape.dim[dimension].Clear()
-                        output.type.tensor_type.shape.dim[dimension].dim_value = weight_dict[output.name].shape[dimension]
 
     output_tensors = execute_onnx(model, input_dict)
     weight_dict["delta_4d"] = output_tensors[(list(output_tensors.keys())[0])]
