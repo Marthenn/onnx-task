@@ -3,12 +3,10 @@ from qonnx.core.modelwrapper import ModelWrapper
 from qonnx.core.onnx_exec import execute_onnx
 import onnx.numpy_helper as numpy_helper
 import numpy as np
-import torch
-import onnx
 
 from onnx.shape_inference import infer_shapes
-from inject_utils.layers import perturb_quantizer
 from inject_utils.layers import float32_bit_flip
+from inject_utils.layers import int32_bit_flip
 from inject_utils.layers import delta_init
 from inject_utils.layers import int_bit_flip
 from inject_utils.layers import uint_bit_flip
@@ -64,12 +62,14 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
         # print(node.name)
         faulty_value = None
         target_indices = [np.random.randint(0, dim) for dim in weight_dict[tensor_output_name].shape]
+        weight_dict["target_indices"] = target_indices
         golden_value = weight_dict[tensor_output_name][tuple(target_indices)]
         # print(weight_dict[tensor_output_name][tuple(target_indices)])
         if "BITFLIP" in inject_parameters["inject_type"]:
-            faulty_value, flip_bit = float32_bit_flip(weight_dict[tensor_output_name], target_indices)
+            faulty_value, flip_bit = int32_bit_flip(weight_dict[tensor_output_name], target_indices)
         else:
             faulty_value = delta_init()
+        weight_dict["output_original"] = weight_dict[tensor_output_name].copy()
         weight_dict[tensor_output_name][tuple(target_indices)] = faulty_value
         # print("FAULTY:")
         # print(faulty_value)
@@ -83,6 +83,7 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
                 faulty_value, target_indices = uint_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], 4)
             else:
                 raise ValueError("Invalid operation type")
+            weight_dict["target_indices"] = target_indices
             weight_dict["delta_4d"] = np.zeros_like(weight_dict[inject_parameters["faulty_tensor_name"]])
             weight_dict["delta_4d"][tuple(target_indices)] = faulty_value
             perturb = np.int32(weight_dict["delta_4d"][tuple(target_indices)]) - np.int32(weight_dict[inject_parameters["faulty_tensor_name"]][tuple(target_indices)])
@@ -155,6 +156,7 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
             # print("After nonzero")
             # print(weight_dict["delta_4d"])
             temp_variable = (np.add(weight_dict[tensor_output_name], weight_dict["delta_4d"]))
+            weight_dict["output_original"] = weight_dict[tensor_output_name].copy()
             weight_dict[tensor_output_name] = temp_variable
             output_tensors[tensor_output_name] = temp_variable
 
