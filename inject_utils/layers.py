@@ -80,16 +80,12 @@ def int_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4
     faulty_tensor = input_dict[target_tensor]
     faulty_tensor = np.int8(faulty_tensor)
     random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
-    """
     print("ORIGINAL VALUE:")
     print(faulty_tensor[tuple(random_indices)])
-    """
     faulty_value = flip_int8_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
     assert faulty_value >= -128 and faulty_value <= 127
-    """
-    faulty_value = flip_int4_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
-    assert faulty_value >= -8 and faulty_value <= 7
-    """
+    print("FAULTY VALUE:")
+    print(faulty_value)
     return faulty_value, random_indices
 
 def uint_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4):
@@ -113,14 +109,7 @@ def perturb_quantizer(graph, node, module, model, input_dict, weight_dict, fault
         faulty_value, target_indices = uint_bit_flip(weight_dict, faulty_tensor_name, faulty_bit_position, 4)
     else:
         faulty_value, target_indices = int_bit_flip(weight_dict, faulty_tensor_name, faulty_bit_position, 4)
-    """
-    print("FAULTY VALUE:")
-    print(faulty_value)
-    
-    print("INPUT")
-    print(input_dict[list(input_dict.keys())[0]].shape)
-    print(input_dict[list(input_dict.keys())[1]].shape)
-    """
+
     golden_value = weight_dict[faulty_tensor_name][tuple(target_indices)]
     is_signed = ""
     if isinstance(golden_value, np.uint8):
@@ -133,23 +122,25 @@ def perturb_quantizer(graph, node, module, model, input_dict, weight_dict, fault
     input_perturb[tuple(target_indices)] = faulty_value
     input_dict[faulty_tensor_name] = input_perturb
 
-    """
-    print("INPUT INNER:")
-    print(input_dict[list(input_dict.keys())[0]].shape)
-    print(input_dict[list(input_dict.keys())[1]].shape)
-    print("FOCUS GRAPH:")
-
-    print(graph)
-    """
+    print("CEK SINI")
+    print(input_dict[faulty_tensor_name])
 
     output_tensors = execute_onnx(model, input_dict)
+    dequantized_result_tensor_name = list(output_tensors.keys())[0]
     weight_dict["delta_4d"] = output_tensors[(list(output_tensors.keys())[0])]
-    random_indices = [np.random.randint(0, dim) for dim in weight_dict["delta_4d"].shape]
+    print("ORIGINAL DELTA_4D:")
+    print(weight_dict["delta_4d"])
+    #random_indices = [np.random.randint(0, dim) for dim in weight_dict["delta_4d"].shape]
+    random_indices = target_indices
+    print("ORIGINAL OUTPUT:")
+    print(weight_dict[dequantized_result_tensor_name])
     faulty_index_value = weight_dict["delta_4d"][tuple(random_indices)]
 
-    dequantized_result_tensor_name = list(output_tensors.keys())[0]
     perturb = weight_dict["delta_4d"][tuple(random_indices)] - weight_dict[dequantized_result_tensor_name][tuple(random_indices)]
+
     weight_dict["delta_4d"][tuple(random_indices)] = perturb
+    print("CEK PERTURB")
+    print(weight_dict["delta_4d"])
 
     return weight_dict#, dequantized_result_tensor_name, target_indices, golden_value, faulty_value, is_signed
 
