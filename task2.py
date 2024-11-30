@@ -212,40 +212,40 @@ def run_module(module, input_values, module_filepath, inject_parameters=None):
 
 if __name__ == "__main__":
     # Matmul Integer Injection
-    module_filepath = "matmul_integer.onnx"
-    mat_A = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
-    mat_B = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
-    input_values = {
-        "input_A": mat_A,
-        "input_B": mat_B
-    }
-    inject_parameters = {}
-    inject_parameters["inject_type"] = "INPUT"
-    inject_parameters["faulty_tensor_name"] = "input_A"
-    inject_parameters["faulty_bit_position"] = 1
-    inject_parameters["faulty_output_tensor"] = "output_Y"
-    inject_parameters["faulty_operation_name"] = "MatMulInteger"
-    print(run_module(None, input_values, module_filepath, inject_parameters))
-
-    # Conv Integer Injection
-    # module_filepath = "conv_integer.onnx"
-    # mat_X = np.random.randint(0, 225, (1, 1, 3, 3)).astype(np.uint8)
-    # mat_W = np.random.randint(0, 225, (1, 1, 2, 2)).astype(np.uint8)
-    # zp_X = np.random.randint(0, 225, (1)).astype(np.uint8)
-    # zp_W = np.random.randint(0, 225, (1)).astype(np.uint8)
+    # module_filepath = "models/matmul_integer.onnx"
+    # mat_A = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
+    # mat_B = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
     # input_values = {
-    #     "input_X": mat_X,
-    #     "input_W": mat_W,
-    #     "input_X_zero_point": zp_X,
-    #     "input_W_zero_point": zp_W
+    #     "input_A": mat_A,
+    #     "input_B": mat_B
     # }
     # inject_parameters = {}
-    # inject_parameters["inject_type"] = "WEIGHT"
-    # inject_parameters["faulty_tensor_name"] = "input_X"
-    # inject_parameters["faulty_bit_position"] = 0
+    # inject_parameters["inject_type"] = "INPUT"
+    # inject_parameters["faulty_tensor_name"] = "input_A"
+    # inject_parameters["faulty_bit_position"] = 1
     # inject_parameters["faulty_output_tensor"] = "output_Y"
-    # inject_parameters["faulty_operation_name"] = "ConvInteger"
+    # inject_parameters["faulty_operation_name"] = "MatMulInteger"
     # print(run_module(None, input_values, module_filepath, inject_parameters))
+
+    # Conv Integer Injection
+    module_filepath = "models/conv_integer.onnx"
+    mat_X = np.random.randint(0, 225, (1, 1, 3, 3)).astype(np.uint8)
+    mat_W = np.random.randint(0, 225, (1, 1, 2, 2)).astype(np.uint8)
+    zp_X = np.random.randint(0, 225, (1)).astype(np.uint8)
+    zp_W = np.random.randint(0, 225, (1)).astype(np.uint8)
+    input_values = {
+        "input_X": mat_X,
+        "input_W": mat_W,
+        "input_X_zero_point": zp_X,
+        "input_W_zero_point": zp_W
+    }
+    inject_parameters = {}
+    inject_parameters["inject_type"] = "WEIGHT"
+    inject_parameters["faulty_tensor_name"] = "input_X"
+    inject_parameters["faulty_bit_position"] = 0
+    inject_parameters["faulty_output_tensor"] = "output_Y"
+    inject_parameters["faulty_operation_name"] = "ConvInteger"
+    print(run_module(None, input_values, module_filepath, inject_parameters))
 
 """
 Golden output = tanpa fault injection

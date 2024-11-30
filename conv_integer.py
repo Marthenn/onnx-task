@@ -26,4 +26,4 @@ def conv_integer():
 
 if __name__ == "__main__":
     model = conv_integer()
-    onnx.save(model, 'conv_integer.onnx')
+    onnx.save(model, 'models/conv_integer.onnx')

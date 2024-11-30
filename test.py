@@ -8,7 +8,7 @@ class MyTestCase(unittest.TestCase):
         mat_A = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
         mat_B = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
 
-        model_path = 'matmul_integer.onnx'
+        model_path = 'models/matmul_integer.onnx'
         sess = ort.InferenceSession(model_path)
         inputs = {
             'input_A': mat_A,
@@ -24,7 +24,7 @@ class MyTestCase(unittest.TestCase):
         zero_X = np.random.randint(0, 225, (1)).astype(np.uint8)
         zero_W = np.random.randint(0, 225, (1)).astype(np.uint8)
 
-        model_path = 'conv_integer.onnx'
+        model_path = 'models/conv_integer.onnx'
         sess = ort.InferenceSession(model_path)
         inputs = {
             'input_X': mat_X,
