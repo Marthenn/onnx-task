@@ -4,6 +4,9 @@ from qonnx.core.onnx_exec import execute_onnx
 import numpy as np
 import struct
 
+def int32tobin(value):
+    return ''.join(bin(c).replace('0b', '').rjust(8, '0') for c in struct.pack('!i', value))
+
 def fp32tobin(value):
     return ''.join(bin(c).replace('0b', '').rjust(8, '0') for c in struct.pack('!f', value))
 
@@ -15,11 +18,32 @@ def bin2fp32(bin_str):
     else:
         return data
 
+def bin2int32(bin_str):
+    assert len(bin_str) == 32
+    data = struct.unpack('!i',struct.pack('!I', int(bin_str, 2)))[0]
+    if np.isnan(data):
+        return 0
+    else:
+        return data
+
 def delta_init():
     one_bin = ''
     for _ in range(32):
         one_bin += str(np.random.randint(0,2))
-    return bin2fp32(one_bin)
+    # Awalnya ini bin2fp32 tapi karena modelku int32 jadi diubah
+    value = bin2int32(one_bin)
+    return value
+
+def int32_bit_flip(faulty_tensor, target_indices):
+    golden_value = faulty_tensor[tuple(target_indices)]
+    golden_string = int32tobin(golden_value)
+    flip_bit = np.random.randint(32)
+    if golden_string[31-flip_bit] == '1':
+        inject_string = golden_string[:31-flip_bit] + '0' + golden_string[31-flip_bit+1:]
+    else:
+        inject_string = golden_string[:31-flip_bit] + '1' + golden_string[31-flip_bit+1:]
+    faulty_value = bin2int32(inject_string)
+    return faulty_value, flip_bit
 
 def float32_bit_flip(faulty_tensor, target_indices):
     golden_value = faulty_tensor[tuple(target_indices)]
@@ -65,7 +89,7 @@ def flip_int8_bit(value, bit_position):
         flipped_value -= 256
     if flipped_value < -128:
         flipped_value += 256
-    return flipped_value
+    return np.int8(flipped_value)
 
 def flip_uint8_bit(value, bit_position):
     mask = 1 << bit_position
@@ -80,12 +104,12 @@ def int_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4
     faulty_tensor = input_dict[target_tensor]
     faulty_tensor = np.int8(faulty_tensor)
     random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
-    print("ORIGINAL VALUE:")
-    print(faulty_tensor[tuple(random_indices)])
+    # print("ORIGINAL VALUE:")
+    # print(faulty_tensor[tuple(random_indices)])
     faulty_value = flip_int8_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
     assert faulty_value >= -128 and faulty_value <= 127
-    print("FAULTY VALUE:")
-    print(faulty_value)
+    # print("FAULTY VALUE:")
+    # print(faulty_value)
     return faulty_value, random_indices
 
 def uint_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4):
