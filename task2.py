@@ -10,6 +10,7 @@ from onnx.shape_inference import infer_shapes
 from inject_utils.layers import perturb_quantizer
 from inject_utils.layers import float32_bit_flip
 from inject_utils.layers import delta_init
+from inject_utils.layers import int_bit_flip
 
 import time
 import copy
@@ -53,6 +54,8 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
     output_tensors = execute_onnx(model, input_dict)
     tensor_output_name = list(output_tensors.keys())[0]
     original_tensor_output = output_tensors[tensor_output_name]
+    print("OUTPUT Y:")
+    print(original_tensor_output)
     weight_dict[tensor_output_name] = output_tensors[tensor_output_name]
 
     if inject_parameters and ("RANDOM" in inject_parameters["inject_type"]) and (node.op_type == inject_parameters["faulty_operation_name"]):
@@ -73,17 +76,29 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
     if inject_parameters and (inject_parameters["inject_type"] in ["INPUT", "WEIGHT", "INPUT16", "WEIGHT16"]):
         # First layer in faulty_trace, obtains perturbations
         if inject_parameters["faulty_tensor_name"] in node.input:
-            weight_dict = perturb_quantizer(graph, node, None, model, input_dict, weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"])
-            print("After pertrub quantizer")
-            print(weight_dict["delta_4d"])
+            faulty_value, target_indices = int_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], 4)
+            weight_dict["delta_4d"] = np.zeros_like(weight_dict[inject_parameters["faulty_tensor_name"]])
+            weight_dict["delta_4d"][tuple(target_indices)] = faulty_value
+            perturb = weight_dict["delta_4d"][tuple(target_indices)] - weight_dict[inject_parameters["faulty_tensor_name"]][tuple(target_indices)]
+            weight_dict["delta_4d"][tuple(target_indices)] = perturb
+
+            #TODO: fix this
+            input_dict_original = input_dict.copy()
+            intermediate_input_name = inject_parameters["faulty_tensor_name"]
+            for input_node in node.input:
+                if input_node == inject_parameters["faulty_tensor_name"]:
+                    intermediate_input_name = input_node
+            input_dict[intermediate_input_name] = weight_dict["delta_4d"]
+            intermediate_output_tensors = execute_onnx(model, input_dict)
+            print(input_dict)
+            weight_dict["delta_4d"] = intermediate_output_tensors[list(intermediate_output_tensors)[0]]
+            input_dict = input_dict_original
 
         # Final layer in faulty_trace, should be the target layer and applies the fault models
         faulty_operation = inject_parameters["faulty_operation_name"]
         if faulty_operation == inject_parameters["faulty_operation_name"]:
             print("FINAL LAYER")
             print(faulty_operation)
-            print("Before if else")
-            print(weight_dict["delta_4d"])
             if "INPUT16" == inject_parameters["inject_type"]:
                 delta_16 = np.zeros(weight_dict["delta_4d"].shape, dtype=np.float32)
                 random_shape = list(weight_dict["delta_4d"].shape)
@@ -137,12 +152,6 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
             weight_dict[tensor_output_name] = temp_variable
             output_tensors[tensor_output_name] = temp_variable
 
-    if output_tensors is None:
-        print("HERE")
-        print(input_dict)
-        print(input_dict.keys())
-        print(node)
-        print(node.name)
     return output_tensors, weight_dict, list_operation_time
 
 def inference(main_graph, weight_dict, module, inject_parameters=None):
@@ -154,6 +163,8 @@ def inference(main_graph, weight_dict, module, inject_parameters=None):
     for node in main_graph.node:
         start_time = time.time()
         output_tensors, weight_dict, list_operation_time = execute_single_node(node, weight_dict, main_graph, module)
+    print("OUTPUT Y FAULTY:")
+    print(output_tensors[list(output_tensors.keys())[0]])
     return output_tensors, weight_dict
 
 def expand_node_inputs_outputs(graph, node, weight_dict, module):
