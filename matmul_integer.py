@@ -24,4 +24,4 @@ def matmul_integer():
 
 if __name__ == "__main__":
     model = matmul_integer()
-    onnx.save(model, 'matmul_integer.onnx')
+    onnx.save(model, 'models/matmul_integer.onnx')
