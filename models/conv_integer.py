@@ -1,12 +1,12 @@
 import onnx
 from onnx import helper, TensorProto
 
-def conv_integer():
-    input_X = helper.make_tensor_value_info('input_X', TensorProto.UINT8, [1, 1, None, None])
-    input_W = helper.make_tensor_value_info('input_W', TensorProto.UINT8, [1, 1, None, None])
+def conv_integer(size):
+    input_X = helper.make_tensor_value_info('input_X', TensorProto.UINT8, [1, 1, size, size])
+    input_W = helper.make_tensor_value_info('input_W', TensorProto.UINT8, [1, 1, size, size])
     input_X_zero_point = helper.make_tensor_value_info('input_X_zero_point', TensorProto.UINT8, [1])
     input_W_zero_point = helper.make_tensor_value_info('input_W_zero_point', TensorProto.UINT8, [1])
-    output_Y = helper.make_tensor_value_info('output_Y', TensorProto.INT32, [1, 1, None, None])
+    output_Y = helper.make_tensor_value_info('output_Y', TensorProto.INT32, [1, 1, 1, 1])
 
     conv_node = helper.make_node(
         'ConvInteger',
@@ -21,9 +21,10 @@ def conv_integer():
         [output_Y]
     )
 
-    model = helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
-    return model
+    return helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
 
 if __name__ == "__main__":
-    model = conv_integer()
-    onnx.save(model, 'conv_integer.onnx')
+    sizes = [2, 4, 8, 16, 32, 64, 128, 256, 512]
+    for size in sizes:
+        model = conv_integer(size)
+        onnx.save(model, f'conv_integer_{size}.onnx')
