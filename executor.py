@@ -88,7 +88,6 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
             perturb = np.int32(weight_dict["delta_4d"][tuple(target_indices)]) - np.int32(weight_dict[inject_parameters["faulty_tensor_name"]][tuple(target_indices)])
             weight_dict["delta_4d"][tuple(target_indices)] = perturb
 
-            # TODO: fix this
             input_dict_original = input_dict.copy()
             intermediate_input_name = inject_parameters["faulty_tensor_name"]
             for input_node in node.input:
