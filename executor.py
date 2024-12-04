@@ -56,13 +56,13 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
     # print("OUTPUT Y:")
     # print(original_tensor_output)
     weight_dict[tensor_output_name] = output_tensors[tensor_output_name]
+    target_indices = inject_parameters["target_indices"]
 
     if inject_parameters and ("RANDOM" in inject_parameters["inject_type"]) and (node.op_type == inject_parameters["faulty_operation_name"]):
         # print("FOUND HERE RANDOM:")
         # print(node.name)
         faulty_value = None
-        target_indices = [np.random.randint(0, dim) for dim in weight_dict[tensor_output_name].shape]
-        weight_dict["target_indices"] = target_indices
+        # target_indices = [np.random.randint(0, dim) for dim in weight_dict[tensor_output_name].shape]
         golden_value = weight_dict[tensor_output_name][tuple(target_indices)]
         # print(weight_dict[tensor_output_name][tuple(target_indices)])
         if "BITFLIP" in inject_parameters["inject_type"]:
@@ -78,12 +78,11 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
         # First layer in faulty_trace, obtains perturbations
         if inject_parameters["faulty_tensor_name"] in node.input:
             if "MatMulInteger" in node.op_type:
-                faulty_value, target_indices = int_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], 4)
+                faulty_value = int_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], inject_parameters["target_indices"], 4)
             elif "ConvInteger" in node.op_type:
-                faulty_value, target_indices = uint_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], 4)
+                faulty_value = uint_bit_flip(weight_dict, inject_parameters["faulty_tensor_name"], inject_parameters["faulty_bit_position"], inject_parameters["target_indices"], 4)
             else:
                 raise ValueError("Invalid operation type")
-            weight_dict["target_indices"] = target_indices
             weight_dict["delta_4d"] = np.zeros_like(weight_dict[inject_parameters["faulty_tensor_name"]])
             weight_dict["delta_4d"][tuple(target_indices)] = faulty_value
             perturb = np.int32(weight_dict["delta_4d"][tuple(target_indices)]) - np.int32(weight_dict[inject_parameters["faulty_tensor_name"]][tuple(target_indices)])
@@ -253,6 +252,7 @@ if __name__ == "__main__":
     inject_parameters["faulty_bit_position"] = 0
     inject_parameters["faulty_output_tensor"] = "output_Y"
     inject_parameters["faulty_operation_name"] = "ConvInteger"
+    # inject_parameters["target_indices"] = "ConvInteger"
     # print(run_module(None, input_values, module_filepath, inject_parameters))
 
 """

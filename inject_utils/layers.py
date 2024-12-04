@@ -22,9 +22,9 @@ def bin2int32(bin_str):
     assert len(bin_str) == 32
     data = struct.unpack('!i',struct.pack('!I', int(bin_str, 2)))[0]
     if np.isnan(data):
-        return 0
+        return np.int32(0)
     else:
-        return data
+        return np.int32(data)
 
 def delta_init():
     one_bin = ''
@@ -100,33 +100,33 @@ def flip_uint8_bit(value, bit_position):
         flipped_value += 256
     return flipped_value
 
-def int_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4):
+def int_bit_flip(input_dict, target_tensor, target_bit_position, target_indices, bit_precision=4):
     faulty_tensor = input_dict[target_tensor]
     faulty_tensor = np.int8(faulty_tensor)
-    random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
+    # random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
     # print("ORIGINAL VALUE:")
     # print(faulty_tensor[tuple(random_indices)])
-    faulty_value = flip_int8_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
+    faulty_value = flip_int8_bit(faulty_tensor[tuple(target_indices)], target_bit_position)
     assert faulty_value >= -128 and faulty_value <= 127
     # print("FAULTY VALUE:")
     # print(faulty_value)
-    return faulty_value, random_indices
+    return faulty_value
 
-def uint_bit_flip(input_dict, target_tensor, target_bit_position, bit_precision=4):
+def uint_bit_flip(input_dict, target_tensor, target_bit_position, target_indices, bit_precision=4):
     faulty_tensor = input_dict[target_tensor]
     faulty_tensor = np.uint8(faulty_tensor)
-    random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
+    # random_indices = [np.random.randint(0, dim) for dim in faulty_tensor.shape]
     """
     print("ORIGINAL VALUE:")
     print(faulty_tensor[tuple(random_indices)])
     """
-    faulty_value = flip_uint8_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
+    faulty_value = flip_uint8_bit(faulty_tensor[tuple(target_indices)], target_bit_position)
     assert faulty_value >= 0 and faulty_value <= 255
     """
     faulty_value = flip_int4_bit(faulty_tensor[tuple(random_indices)], target_bit_position)
     assert faulty_value >= -8 and faulty_value <= 7
     """
-    return faulty_value, random_indices
+    return faulty_value
 
 def perturb_quantizer(graph, node, module, model, input_dict, weight_dict, faulty_tensor_name, faulty_bit_position):
     if "ConvInteger" in node.op_type:
