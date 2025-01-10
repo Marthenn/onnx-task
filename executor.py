@@ -94,9 +94,12 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
                 if input_node == inject_parameters["faulty_tensor_name"]:
                     intermediate_input_name = input_node
             input_dict[intermediate_input_name] = weight_dict["delta_4d"]
+            # print(f"INPUT DICT: {input_dict}")
             intermediate_output_tensors = execute_onnx(model, input_dict)
+            # print(f"INTERMEDIATE OUTPUT: {intermediate_output_tensors}")
             # print(input_dict)
             weight_dict["delta_4d"] = intermediate_output_tensors[list(intermediate_output_tensors)[0]]
+            # print(f"WEIGHT AFTER INTERMEDIATE: {weight_dict['delta_4d']}")
             input_dict = input_dict_original
 
         # Final layer in faulty_trace, should be the target layer and applies the fault models
@@ -104,9 +107,12 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
         if faulty_operation == inject_parameters["faulty_operation_name"]:
             # print("FINAL LAYER")
             # print(faulty_operation)
+
+            # TODO: row_index dan column_index dikasih jadi return value ke csv
             if "INPUT16" == inject_parameters["inject_type"]:
                 delta_16 = np.zeros(weight_dict["delta_4d"].shape, dtype=np.float32)
                 random_shape = list(weight_dict["delta_4d"].shape)
+                # TODO: verify -1 -2 atau biarin; should be ada negative indexing
                 row_index = random_shape[3]//16
                 if row_index == 0:
                     row_index = 0
@@ -117,18 +123,20 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
                 if len(np.nonzero(weight_dict["delta_4d"])[0]) > 0:
                     for shape_index_array in np.nonzero(weight_dict["delta_4d"]):
                         indices.append(list(shape_index_array)[0])
-                    indices[3] = row_index
+                    indices[-1] = row_index
 
                     for i in range(16):
                         if i >= random_shape[3]:
                             break
                         delta_16[tuple(indices)] = weight_dict["delta_4d"][(tuple(indices))]
-                        indices[3] = indices[3] + 1
+                        indices[-1] = indices[-1] + 1
                     weight_dict["delta_4d"] = delta_16
 
             elif "WEIGHT16" == inject_parameters["inject_type"]:
+                # print(f"d4d: {weight_dict['delta_4d']}")
                 delta_16 = np.zeros(weight_dict["delta_4d"].shape, dtype=np.float32)
                 random_shape = list(weight_dict["delta_4d"].shape)
+                # TODO: verify -1 -2 atau biarin; should be ada negative indexing
                 column_index = random_shape[2]//16
                 if column_index == 0:
                     column_index = 0
@@ -139,13 +147,16 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
                 if len(np.nonzero(weight_dict["delta_4d"])[0]) > 0:
                     for shape_index_array in np.nonzero(weight_dict["delta_4d"]):
                         indices.append(list(shape_index_array)[0])
-                    indices[2] = column_index
+                    indices[-2] = column_index
 
+                    # TODO: make this parameterized instead of random
                     for i in range(np.random.randint(1,16)):
                         if i >= random_shape[2]:
                             break
+                        # print(f"INDICES: {indices}")
                         delta_16[tuple(indices)] = weight_dict["delta_4d"][(tuple(indices))]
-                        indices[2] = indices[2] + 1
+                        indices[-2] = indices[-2] + 1
+                        # print(f"DELTA 16: {delta_16}")
                     weight_dict["delta_4d"] = delta_16
             else:
                 pass
@@ -155,6 +166,9 @@ def execute_node(node, main_graph, final_output_node, weight_dict, module, injec
             # print("After nonzero")
             # print(weight_dict["delta_4d"])
             temp_variable = (np.add(weight_dict[tensor_output_name], weight_dict["delta_4d"]))
+            # print(f"TENS OUT: {weight_dict[tensor_output_name]}")
+            # print(f"DELTA: {weight_dict['delta_4d']}")
+            # print(f"TEMP VAR: {temp_variable}")
             weight_dict["output_original"] = weight_dict[tensor_output_name].copy()
             weight_dict[tensor_output_name] = temp_variable
             output_tensors[tensor_output_name] = temp_variable
@@ -219,39 +233,42 @@ def run_module(module, input_values, module_filepath, inject_parameters=None):
 
 if __name__ == "__main__":
     # Matmul Integer Injection
-    # module_filepath = "models/matmul_integer.onnx"
-    # mat_A = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
-    # mat_B = np.random.randint(-128, 127, (1, 1, 2, 2)).astype(np.int8)
-    # input_values = {
-    #     "input_A": mat_A,
-    #     "input_B": mat_B
-    # }
-    # inject_parameters = {}
-    # inject_parameters["inject_type"] = "INPUT"
-    # inject_parameters["faulty_tensor_name"] = "input_A"
-    # inject_parameters["faulty_bit_position"] = 1
-    # inject_parameters["faulty_output_tensor"] = "output_Y"
-    # inject_parameters["faulty_operation_name"] = "MatMulInteger"
-    # print(run_module(None, input_values, module_filepath, inject_parameters))
-
-    # Conv Integer Injection
-    module_filepath = "models/conv_integer.onnx"
-    mat_X = np.random.randint(0, 225, (1, 1, 3, 3)).astype(np.uint8)
-    mat_W = np.random.randint(0, 225, (1, 1, 2, 2)).astype(np.uint8)
-    zp_X = np.random.randint(0, 225, (1)).astype(np.uint8)
-    zp_W = np.random.randint(0, 225, (1)).astype(np.uint8)
+    module_filepath = "models/matmul_integer_2.onnx"
+    mat_A = np.array([[[[109, -80], [102, -4]]]]).astype(np.int8)
+    mat_B = np.array([[[[57, -90], [-20, -83]]]]).astype(np.int8)
     input_values = {
-        "input_X": mat_X,
-        "input_W": mat_W,
-        "input_X_zero_point": zp_X,
-        "input_W_zero_point": zp_W
+        "input_A": mat_A,
+        "input_B": mat_B
     }
     inject_parameters = {}
-    inject_parameters["inject_type"] = "WEIGHT"
-    inject_parameters["faulty_tensor_name"] = "input_X"
-    inject_parameters["faulty_bit_position"] = 0
+    inject_parameters["inject_type"] = "WEIGHT16"
+    inject_parameters["faulty_tensor_name"] = "input_B"
+    inject_parameters["faulty_bit_position"] = 4
     inject_parameters["faulty_output_tensor"] = "output_Y"
-    inject_parameters["faulty_operation_name"] = "ConvInteger"
+    inject_parameters["faulty_operation_name"] = "MatMulInteger"
+    inject_parameters["target_indices"] = [0, 0, 1, 0]
+    print(run_module(None, input_values, module_filepath, inject_parameters))
+    res = run_module(None, input_values, module_filepath, inject_parameters)
+    print(res)
+
+    # Conv Integer Injection
+    # module_filepath = "models/conv_integer.onnx"
+    # mat_X = np.random.randint(0, 255, (1, 1, 3, 3)).astype(np.uint8)
+    # mat_W = np.random.randint(0, 255, (1, 1, 2, 2)).astype(np.uint8)
+    # zp_X = np.random.randint(0, 255, (1)).astype(np.uint8)
+    # zp_W = np.random.randint(0, 255, (1)).astype(np.uint8)
+    # input_values = {
+    #     "input_X": mat_X,
+    #     "input_W": mat_W,
+    #     "input_X_zero_point": zp_X,
+    #     "input_W_zero_point": zp_W
+    # }
+    # inject_parameters = {}
+    # inject_parameters["inject_type"] = "WEIGHT"
+    # inject_parameters["faulty_tensor_name"] = "input_X"
+    # inject_parameters["faulty_bit_position"] = 0
+    # inject_parameters["faulty_output_tensor"] = "output_Y"
+    # inject_parameters["faulty_operation_name"] = "ConvInteger"
     # inject_parameters["target_indices"] = "ConvInteger"
     # print(run_module(None, input_values, module_filepath, inject_parameters))
 
